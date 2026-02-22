@@ -1,4 +1,4 @@
-﻿import { useRef, useEffect } from 'react';
+﻿import { useRef, useEffect, useState } from 'react';
 import {
   Table, TableHeader, TableBody,
   TableHead, TableRow, TableCell,
@@ -18,8 +18,34 @@ function truncate(value: string | null, max = 80): string {
   return value.length > max ? value.slice(0, max) + '…' : value;
 }
 
+// Pre-determined widths so skeleton rows look natural regardless of row index
+const SK_WIDTHS = [
+  ['62%', '38%', '55%', '44%', '36px', '36px'],
+  ['48%', '50%', '70%', '28%', '36px', '36px'],
+  ['74%', '32%', '42%', '60%', '36px', '36px'],
+  ['55%', '46%', '65%', '35%', '36px', '36px'],
+];
+
 export function ArtworksTable({ artworks, loading, selectedIds, onSelectionChange }: Props) {
   const headerCheckRef = useRef<HTMLInputElement>(null);
+  const scrollRef      = useRef<HTMLDivElement>(null);
+  const [atEnd,   setAtEnd]   = useState(false);
+  const [atStart, setAtStart] = useState(true);
+
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    function check() {
+      if (!el) return;
+      setAtEnd(el.scrollWidth - el.scrollLeft - el.clientWidth < 2);
+      setAtStart(el.scrollLeft < 2);
+    }
+    check();
+    el.addEventListener('scroll', check, { passive: true });
+    const ro = new ResizeObserver(check);
+    ro.observe(el);
+    return () => { el.removeEventListener('scroll', check); ro.disconnect(); };
+  }, []);
 
   const selectedOnPage = artworks.filter(a => selectedIds.has(a.id));
   const allSelected = artworks.length > 0 && selectedOnPage.length === artworks.length;
@@ -53,25 +79,49 @@ export function ArtworksTable({ artworks, loading, selectedIds, onSelectionChang
     }
   }
 
+  // Number of skeleton rows: use previous page count or default 12
+  const skeletonCount = artworks.length || 12;
+
   return (
-    <div
-      key={artworks[0]?.id ?? 'empty'}
-      className={`animate-fade-in artworks-wrap transition-opacity duration-200 ${loading ? 'opacity-50 pointer-events-none' : ''}`}
-    >
+    <div className="relative">
+      <div ref={scrollRef} className="artworks-wrap">
       <Table>
         <TableHeader>
           <TableRow className="artworks-thead hover:bg-transparent">
             <TableHead className="w-[52px] px-3">
-              <div className="flex items-center justify-center gap-1">
-                <input
-                  ref={headerCheckRef}
-                  type="checkbox"
-                  checked={allSelected}
-                  onChange={toggleAll}
-                  className="artworks-checkbox"
-                  aria-label="Select all rows on this page"
+              {/* Segmented pill: [checkbox | chevron] */}
+              <div
+                className="flex items-center justify-center"
+                style={{
+                  border: '1px solid var(--border-subtle)',
+                  borderRadius: '8px',
+                  overflow: 'hidden',
+                  width: 'fit-content',
+                  margin: '0 auto',
+                }}
+              >
+                <div
+                  className="w-[26px] h-[26px] flex items-center justify-center"
+                  style={{ borderRight: '1px solid var(--border-subtle)' }}
+                  data-tooltip="Select all on page"
+                  data-tooltip-pos="bottom"
+                >
+                  <input
+                    ref={headerCheckRef}
+                    type="checkbox"
+                    checked={allSelected}
+                    onChange={toggleAll}
+                    disabled={loading}
+                    className="artworks-checkbox"
+                    aria-label="Select all rows on this page"
+                  />
+                </div>
+                <SelectNPanel
+                  pageSize={artworks.length || 1}
+                  onSelect={handleSelectN}
+                  disabled={loading}
+                  compact
                 />
-                <SelectNPanel pageSize={artworks.length} onSelect={handleSelectN} />
               </div>
             </TableHead>
             {(['Title', 'Place of Origin', 'Artist', 'Inscriptions', 'Start', 'End'] as const).map(h => (
@@ -83,7 +133,7 @@ export function ArtworksTable({ artworks, loading, selectedIds, onSelectionChang
                     : h === 'Title'
                     ? 'min-w-[220px]'
                     : h === 'Place of Origin'
-                    ? 'min-w-[130px]'
+                    ? 'min-w-[140px]'
                     : h === 'Artist'
                     ? 'min-w-[180px]'
                     : 'min-w-[160px]'
@@ -94,13 +144,37 @@ export function ArtworksTable({ artworks, loading, selectedIds, onSelectionChang
             ))}
           </TableRow>
         </TableHeader>
-        <TableBody>
-          {artworks.length === 0 ? (
+
+        {/*
+         * Key changes when switching between skeleton↔data, which remounts
+         * all rows and re-triggers their staggered rowIn animation.
+         */}
+        <TableBody key={loading ? `sk-${skeletonCount}` : `d-${artworks[0]?.id ?? 0}`}>
+          {loading ? (
+            // ── Skeleton rows ──────────────────────────────────────────────
+            new Array(skeletonCount).fill(null).map((_, i) => (
+              <TableRow
+                key={`sk-${i}`}
+                className="artwork-row pointer-events-none"
+                style={{ animation: `rowIn .2s cubic-bezier(.2,.8,.4,1) ${i * 18}ms both` }}
+              >
+                <TableCell className="w-[52px] px-3 text-center">
+                  <div className="w-[15px] h-[15px] rounded-[4px] skeleton-cell mx-auto" />
+                </TableCell>
+                {SK_WIDTHS[i % SK_WIDTHS.length].map((w, ci) => (
+                  <TableCell key={ci} className={ci >= 4 ? 'text-right' : ''}>
+                    <div className="skeleton-cell" style={{ width: w }} />
+                  </TableCell>
+                ))}
+              </TableRow>
+            ))
+          ) : artworks.length === 0 ? (
+            // ── Empty state ────────────────────────────────────────────────
             <TableRow>
               <TableCell colSpan={7}>
                 <div className="flex flex-col items-center justify-center gap-3 py-16 text-(--text-3)">
                   <svg width="36" height="36" viewBox="0 0 36 36" fill="none" aria-hidden="true">
-                    <rect x="4" y="4" width="28" height="28" rx="6" stroke="currentColor" strokeWidth="1.5"/>
+                    <rect x="4" y="4" width="28" height="28" rx="8" stroke="currentColor" strokeWidth="1.5"/>
                     <path d="M12 18h12M18 12v12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
                   </svg>
                   <span className="text-[13px]">No artworks found</span>
@@ -108,6 +182,7 @@ export function ArtworksTable({ artworks, loading, selectedIds, onSelectionChang
               </TableCell>
             </TableRow>
           ) : (
+            // ── Data rows ──────────────────────────────────────────────────
             artworks.map((row, i) => {
               const isSelected = selectedIds.has(row.id);
               return (
@@ -151,6 +226,40 @@ export function ArtworksTable({ artworks, loading, selectedIds, onSelectionChang
           )}
         </TableBody>
       </Table>
+      </div>
+
+      {/* Right-edge progressive blur — fades when scrolled to end */}
+      <div
+        aria-hidden="true"
+        style={{
+          position: 'absolute',
+          top: 0,
+          right: 0,
+          bottom: 0,
+          width: '72px',
+          borderRadius: '0 var(--radius-lg) var(--radius-lg) 0',
+          background: 'linear-gradient(to right, transparent, var(--surface))',
+          pointerEvents: 'none',
+          opacity: atEnd ? 0 : 1,
+          transition: 'opacity .25s ease',
+        }}
+      />
+      {/* Left-edge fade overlay — visible when scrolled away from start */}
+      <div
+        aria-hidden="true"
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          bottom: 0,
+          width: '72px',
+          borderRadius: 'var(--radius-lg) 0 0 var(--radius-lg)',
+          background: 'linear-gradient(to left, transparent, var(--surface))',
+          pointerEvents: 'none',
+          opacity: atStart ? 0 : 1,
+          transition: 'opacity .25s ease',
+        }}
+      />
     </div>
   );
 }

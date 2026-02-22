@@ -21,14 +21,14 @@ function reducer(_: State, action: Action): State {
   }
 }
 
-export function useArtworks(page: number) {
+export function useArtworks(page: number, limit = 12) {
   const [state, dispatch] = useReducer(reducer, { status: 'idle' });
 
   useEffect(() => {
     let stale = false;
     dispatch({ type: 'FETCH_START' });
 
-    fetchPage(page)
+    fetchPage(page, limit)
       .then(res => {
         if (!stale) dispatch({ type: 'FETCH_OK', data: res.data, pagination: res.pagination });
       })
@@ -37,7 +37,7 @@ export function useArtworks(page: number) {
       });
 
     return () => { stale = true; };
-  }, [page]);
+  }, [page, limit]);
 
   return state;
 }
