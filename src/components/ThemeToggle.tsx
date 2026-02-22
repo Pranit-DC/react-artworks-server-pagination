@@ -25,9 +25,6 @@ export function ThemeToggle({ duration = 400, className = '' }: ThemeToggleProps
       return;
     }
 
-    const transition = document.startViewTransition(startTransition);
-    await transition.ready;
-
     const { top, left, width, height } = buttonRef.current.getBoundingClientRect();
     const x = left + width / 2;
     const y = top + height / 2;
@@ -36,6 +33,10 @@ export function ThemeToggle({ duration = 400, className = '' }: ThemeToggleProps
       Math.max(top, window.innerHeight - top)
     );
 
+    const transition = document.startViewTransition(startTransition);
+    await transition.ready;
+
+    // Always expand NEW layer from the button — wave color = target theme
     document.documentElement.animate(
       {
         clipPath: [
