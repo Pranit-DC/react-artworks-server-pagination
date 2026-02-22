@@ -2,8 +2,7 @@
 
 Browse the Art Institute of Chicago's public collection with server-side pagination and persistent row selection.
 
-**Live:** _add deployed URL_
-**Repo:** _add GitHub URL_
+**Live:** https://react-artworks-server-pagination.pages.dev/
 
 ---
 
