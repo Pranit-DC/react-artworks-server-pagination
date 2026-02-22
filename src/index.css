@@ -52,8 +52,11 @@ html.dark {
 }
 
 /* ── View Transitions ──────────────────────────────────── */
-::view-transition-old(root) { animation: none; }
+::view-transition-old(root),
+::view-transition-new(root) { animation: none; }
+/* NEW (target theme) expands on top; OLD sits behind at full opacity */
 ::view-transition-new(root) { z-index: 9999; }
+::view-transition-old(root) { z-index: 1; }
 
 /* ── Keyframes ─────────────────────────────────────────── */
 @keyframes fadeIn {
