@@ -22,21 +22,31 @@ export function TablePaginator({ pagination, onPageChange }: Props) {
     setJumpVal('');
   }
 
-  const btnBase = 'w-8 h-8 flex items-center justify-center rounded-md border border-(--border) bg-(--surface) text-(--text-1) text-[15px] leading-none transition-all duration-150 cursor-pointer select-none';
-  const btnHover = 'hover:border-(--accent) hover:text-(--accent) hover:bg-(--surface-2) active:scale-90';
-  const btnOff   = 'opacity-25 cursor-not-allowed pointer-events-none';
+  const isFirst = current_page <= 1;
+  const isLast  = current_page >= total_pages;
+
+  const btn = (disabled: boolean) =>
+    [
+      'w-8 h-8 flex items-center justify-center rounded-lg border transition-all duration-150 cursor-pointer select-none text-[13px]',
+      disabled
+        ? 'border-(--border-subtle) text-(--text-3) opacity-40 pointer-events-none'
+        : 'border-(--border) text-(--text-2) bg-(--surface) hover:border-(--accent) hover:text-(--accent) hover:bg-(--accent-muted) active:scale-90',
+    ].join(' ');
 
   return (
-    <div className="mt-1 flex items-center justify-between flex-wrap gap-y-3 gap-x-4 px-1 pt-3.5 pb-1">
-      <span className="text-[12px] text-(--text-2) tabular-nums">
-        {start.toLocaleString()}–{end.toLocaleString()}{' '}
-        <span className="opacity-50">of</span>{' '}
-        {total.toLocaleString()}
-      </span>
+    <div className="mt-3 flex items-center justify-between flex-wrap gap-y-3 gap-x-6 px-0.5 py-1 animate-fade-in">
+
+      {/* Record count */}
+      <p className="text-[11.5px] text-(--text-2) tabular-nums select-none">
+        <span className="font-medium text-(--text-1)">{start.toLocaleString()}–{end.toLocaleString()}</span>
+        {' '}
+        <span className="text-(--text-3)">of {total.toLocaleString()}</span>
+      </p>
 
       <div className="flex items-center gap-2">
+        {/* Jump to page */}
         <form onSubmit={handleJump} className="flex items-center gap-1.5">
-          <label className="text-[11px] text-(--text-2) hidden sm:block">Go to</label>
+          <label className="text-[11px] text-(--text-3) hidden sm:block select-none">Page</label>
           <input
             type="number"
             min={1}
@@ -44,53 +54,52 @@ export function TablePaginator({ pagination, onPageChange }: Props) {
             value={jumpVal}
             onChange={e => setJumpVal(e.target.value)}
             placeholder={String(current_page)}
-            className="w-14 h-8 rounded-md border border-(--border) bg-(--surface) text-(--text-1) text-[12px] text-center px-2 tabular-nums focus:outline-none focus:border-(--accent) transition-colors placeholder:opacity-30 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+            className="w-12 h-8 rounded-lg border border-(--border) bg-(--surface) text-(--text-1) text-[12px] text-center px-2 tabular-nums focus:outline-none focus:border-(--accent) transition-colors placeholder:opacity-25 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
           />
         </form>
 
-        <div className="w-px h-4 bg-(--border) mx-0.5" />
+        <div className="w-px h-4 bg-(--border-subtle)" aria-hidden="true" />
 
-        <button
-          className={`${btnBase} ${current_page <= 1 ? btnOff : btnHover}`}
-          onClick={() => onPageChange(1)}
-          disabled={current_page <= 1}
-          aria-label="First page"
-        >
-          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
-            <path d="M2 2v8M5.5 6l4-4M5.5 6l4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+        {/* First */}
+        <button className={btn(isFirst)} onClick={() => onPageChange(1)} disabled={isFirst} aria-label="First page">
+          <svg width="11" height="11" viewBox="0 0 11 11" fill="none" aria-hidden="true">
+            <path d="M2 1.5v8M5 5.5l4-4M5 5.5l4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
         </button>
 
-        <button
-          className={`${btnBase} ${current_page <= 1 ? btnOff : btnHover}`}
-          onClick={() => onPageChange(current_page - 1)}
-          disabled={current_page <= 1}
-          aria-label="Previous page"
-        >
-          ‹
+        {/* Prev */}
+        <button className={btn(isFirst)} onClick={() => onPageChange(current_page - 1)} disabled={isFirst} aria-label="Previous page">
+          <svg width="7" height="11" viewBox="0 0 7 11" fill="none" aria-hidden="true">
+            <path d="M6 1L1.5 5.5 6 10" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
         </button>
 
-        <span className="text-[12px] text-(--text-1) tabular-nums min-w-[80px] text-center select-none">
-          {current_page.toLocaleString()} / {total_pages.toLocaleString()}
-        </span>
-
-        <button
-          className={`${btnBase} ${current_page >= total_pages ? btnOff : btnHover}`}
-          onClick={() => onPageChange(current_page + 1)}
-          disabled={current_page >= total_pages}
-          aria-label="Next page"
+        {/* Current / Total pill */}
+        <div
+          className="flex items-center gap-1 px-3 h-8 rounded-lg select-none text-[12px] tabular-nums font-medium"
+          style={{
+            background: 'var(--surface-2)',
+            border: '1px solid var(--border-subtle)',
+            minWidth: '80px',
+            justifyContent: 'center',
+          }}
         >
-          ›
+          <span className="text-(--text-1)">{current_page.toLocaleString()}</span>
+          <span className="text-(--text-3) font-normal">/</span>
+          <span className="text-(--text-2) font-normal">{total_pages.toLocaleString()}</span>
+        </div>
+
+        {/* Next */}
+        <button className={btn(isLast)} onClick={() => onPageChange(current_page + 1)} disabled={isLast} aria-label="Next page">
+          <svg width="7" height="11" viewBox="0 0 7 11" fill="none" aria-hidden="true">
+            <path d="M1 1l4.5 4.5L1 10" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
         </button>
 
-        <button
-          className={`${btnBase} ${current_page >= total_pages ? btnOff : btnHover}`}
-          onClick={() => onPageChange(total_pages)}
-          disabled={current_page >= total_pages}
-          aria-label="Last page"
-        >
-          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
-            <path d="M10 2v8M6.5 6L2.5 2M6.5 6l-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+        {/* Last */}
+        <button className={btn(isLast)} onClick={() => onPageChange(total_pages)} disabled={isLast} aria-label="Last page">
+          <svg width="11" height="11" viewBox="0 0 11 11" fill="none" aria-hidden="true">
+            <path d="M9 1.5v8M6 5.5L2 1.5M6 5.5l-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
         </button>
       </div>
