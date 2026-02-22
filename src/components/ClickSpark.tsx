@@ -128,7 +128,7 @@ const ClickSpark: React.FC<ClickSparkProps> = ({
 
   const handleClick = (e: React.MouseEvent<HTMLDivElement>): void => {
     const target = e.target as HTMLElement;
-    if (!target.closest('button, a, input, [role="button"], [role="tab"], [role="option"]')) return;
+    if (!(target instanceof HTMLInputElement && target.type === 'checkbox')) return;
 
     const canvas = canvasRef.current;
     if (!canvas) return;

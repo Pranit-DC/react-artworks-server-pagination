@@ -56,6 +56,8 @@ export function ThemeToggle({ duration = 400, className = '' }: ThemeToggleProps
       ref={buttonRef}
       onClick={toggle}
       aria-label="Toggle theme"
+      data-tooltip={isDark ? 'Switch to light' : 'Switch to dark'}
+      data-tooltip-pos="bottom"
       className={`w-8 h-8 flex items-center justify-center rounded-lg text-(--text-2) hover:text-(--text-1) hover:bg-black/5 dark:hover:bg-white/8 transition-colors cursor-pointer ${className}`}
     >
       {isDark ? (
